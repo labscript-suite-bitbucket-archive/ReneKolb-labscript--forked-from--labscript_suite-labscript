@@ -1590,11 +1590,11 @@ class Output(Device):
         outputarray = []
         split_offset = 0
         last_time = []
+        split_at_local = np.copy(split_at)
 
         for i, time in enumerate(all_times):
             if iterable(time): # this is a ramp tick/ticks
-                if len(time) == 0: 
-                    split_offset += 1
+                if len(time) == 0:
                     last_time = time
                     continue # skip this tick, since the clock is not ticking for this ramp (a digital clock does, so the ramp is splitted between 2 ramp ticks)
                 if isinstance(self.timeseries[i-split_offset],dict):
@@ -1627,7 +1627,7 @@ class Output(Device):
                                 continue #this is an empty list
                         else:
                             next_time = all_times[i+d]
-                            break        
+                            break
 
 
                     midpoints[-1] = time[-1] + 0.5*(next_time - time[-1]) # fix for time float point error, so the value is evaluated between the last tick and the next tick?
@@ -1645,10 +1645,11 @@ class Output(Device):
                         init_t = series["initial time"]
                         end_t = series["end time"]
                         tick_len = 1./series["clock rate"]
-                        for split in split_at:
+                        for split in split_at_local:
                             if init_t < split and end_t > split:
                                 if abs(end_t-time[-1]) > tick_len: # only inc offset if this is an actual split, not the end of the ramp
                                     split_offset += 1
+                                    split_at_local = np.delete(split_at_local, split)
                                     break
                 else:
                     #relevant for other outputs on that clockline, that does not ramp and just hold the last value
@@ -1666,28 +1667,29 @@ class Output(Device):
                                     continue #this is an empty list
                             else:
                                 next_time = all_times[i+d]
-                                break 
+                                break
 
-                        for split in split_at:  #this instruction is a continuation of a splitted ramp
+                        for split in split_at_local:  #this instruction is a continuation of a splitted ramp
                             if (time[-1] <= split or abs(time[-1]-split)<1e-10) and (split <= next_time or abs(split-next_time)<1e-10):
                                 split_offset += 1
-                                break    
+                                split_at_local = np.delete(split_at_local, split)
+                                break
                     outarray.fill(self.timeseries[i-split_offset])
 
-                    last_time = time            
+                    last_time = time
                 outputarray.append(outarray)
             else:
                 if len(self.timeseries) <= i-split_offset:
-                    #no instructions are set for this 
+                    #no instructions are set for this
                     outarray = self.timeseries[-1]
                     #print "No instruction for this device: "+str(self.name)+ "at t= "+str(time)
                 else:
-                    
+
                     if isinstance(self.timeseries[i-split_offset],dict):
                         outarray = self.timeseries[i-split_offset]['function'](time-self.timeseries[i-split_offset]['initial time'])
                     else:
                         outarray = self.timeseries[i-split_offset]
-                
+
                 outputarray.append(outarray)
                 last_time = time
 
