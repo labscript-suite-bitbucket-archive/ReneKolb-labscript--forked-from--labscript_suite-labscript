@@ -117,6 +117,17 @@ def fastflatten(inarray, dtype):
             flat[i] = val
             i += 1
     return flat
+    
+def intersect1dtolerance(arr1, arr2, tolerance=1e-10):
+    """
+    This method determins the intersection of two 1D-numpy arrays considering a tolerance, in order to get rid of float point errors.
+
+    Example:
+    intersect1dtolerance(array([2., 2.1, 2.2, 2.3, 2.4]), array([2.40000000001, 2.1]))
+     -> array([2.1, 2.4])
+    """
+    return arr1[(np.abs(arr2[:,None] - arr1) < tolerance).any(0)] #about (more than) 3 times faster (in my example)!
+    
 
 def set_passed_properties(property_names = {}):
     """
