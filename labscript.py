@@ -608,15 +608,6 @@ class Pseudoclock(Device):
             clock_line_current_indices[clock_line] = 0
             all_times[clock_line] = []
 
-
-        # iterate over all change times
-        # for clock_line, times in change_times.items():
-            # print '%s: %s'%(clock_line.name, times)
-        #last_step = -1
-        #last_reps = -1
-        #last_index = -1
-        #last_enabled_clocks = 0
-
         split_index = 0
         split_amount = {} #rename to: split_times_by_split_index
         split_ramp_times = {}
@@ -633,8 +624,6 @@ class Pseudoclock(Device):
             if time in self.parent_device.trigger_times[1:]:
                 # A wait instruction:
                 clock.append('WAIT')
-
-            #print "\ni="+str(i)+" time="+str(time)
 
             # list of enabled clocks
             enabled_clocks = []
@@ -722,17 +711,12 @@ class Pseudoclock(Device):
                 current_end_time = time
                 split_t = time
 
-                # the first tick is a single tick, since other clock lines may also tick
-                #clock.append({'start': time, 'reps': 1, 'step': 1/float(maxrate), 'enabled_clocks':enabled_clocks})
-
                 if split_this_ramp: # if this list is not empy we have to split the ramp
                     ###################
                     # Split this ramp #
                     ###################
 
-                    #last_split = time
                     n_ticks, reminder = divmod((ramp_end_time-time)*maxrate,1)
-                    #ramp_times = linspace(time, ramp_end_time, n_ticks, endpoint=False)
                     ramp_times = arange(time, ramp_end_time, 1./maxrate, dtype=float64)
 
 
@@ -837,7 +821,6 @@ class Pseudoclock(Device):
                                 # if the next tick is earlier than a whole ramping tick, we have a remainder != 0, so the last step size is smaller
                                 if remainder:
                                     clock.append({'start': split_t + 1/float(maxrate), 'reps': n_ticks-2, 'step': 1/float(maxrate), 'enabled_clocks':enabled_looping_clocks})
-                                    #clock.append({'start': split_t + (n_ticks-1)/float(maxrate), 'reps': 1, 'step': remainder/maxrate, 'enabled_clocks':enabled_looping_clocks})
                                     clock.append({'start': split_t + (n_ticks-1)/float(maxrate), 'reps': 1, 'step': remainder, 'enabled_clocks':enabled_looping_clocks})
                                     split_clock_instructions[split_index] = 3
                                 else:
@@ -853,13 +836,11 @@ class Pseudoclock(Device):
 
                                 #crop the step size to the splitted
                                 clock.append({'start': time, 'reps': 1, 'step': 1./maxrate, 'enabled_clocks':enabled_clocks})
-                                #clock.append({'start': split_t + 1/float(maxrate), 'reps': 1, 'step': remainder/maxrate, 'enabled_clocks':enabled_looping_clocks})
                                 clock.append({'start': split_t + 1/float(maxrate), 'reps': 1, 'step': remainder, 'enabled_clocks':enabled_looping_clocks})
                                 split_clock_instructions[split_index] = 2
                             elif n_ticks>0:
                                 for clock_line in enabled_clocks:
                                     all_times[clock_line].append([time])
-                                #clock.append({'start': time, 'reps': 1, 'step': remainder/maxrate, 'enabled_clocks':enabled_clocks})
                                 clock.append({'start': time, 'reps': 1, 'step': remainder, 'enabled_clocks':enabled_clocks})
                                 split_clock_instructions[split_index] = 1
                             else:
@@ -868,7 +849,6 @@ class Pseudoclock(Device):
                         #all other ramps are handles differently from the first ramp
                         else:
                             if n_ticks > 1 :
-                                #clock.append({'start': split_t, 'reps': n_ticks, 'step': 1/float(maxrate), 'enabled_clocks':enabled_looping_clocks})
                                 if remainder:
                                     common_t = None
                                     for ct in common_clock_ticks:
@@ -884,7 +864,6 @@ class Pseudoclock(Device):
 
                                         clock.append({'start': split_t, 'reps': 1, 'step': 1/float(maxrate), 'enabled_clocks':common_clock_ticks[common_t]})
                                         clock.append({'start': split_t+1./maxrate, 'reps': n_ticks-2, 'step': 1/float(maxrate), 'enabled_clocks':enabled_looping_clocks})
-                                        #clock.append({'start': split_t+(n_ticks-1)/float(maxrate), 'reps': 1, 'step': remainder/float(maxrate), 'enabled_clocks':enabled_looping_clocks})
                                         clock.append({'start': split_t+(n_ticks-1)/float(maxrate), 'reps': 1, 'step': remainder, 'enabled_clocks':enabled_looping_clocks})
                                         split_clock_instructions[split_index] = 3
                                     else:
@@ -893,7 +872,6 @@ class Pseudoclock(Device):
                                                 all_times[clock_line].append(ticks)
 
                                         clock.append({'start': split_t, 'reps': n_ticks-1, 'step': 1/float(maxrate), 'enabled_clocks':enabled_looping_clocks})
-                                        #clock.append({'start': split_t+(n_ticks-1)/float(maxrate), 'reps': 1, 'step': remainder/float(maxrate), 'enabled_clocks':enabled_looping_clocks})
                                         clock.append({'start': split_t+(n_ticks-1)/float(maxrate), 'reps': 1, 'step': remainder, 'enabled_clocks':enabled_looping_clocks})
                                         split_clock_instructions[split_index] = 2
 
@@ -935,7 +913,6 @@ class Pseudoclock(Device):
                                         _, rem = divmod((split_this_ramp[idx+1]-split_t)*maxrate,1)
                                     #time_to_next_tick = split_this_ramp[idx+1]-split_t
 
-                                    #print "common_tick: remainder="+str(rem)
                                     for clock_line in common_clock_ticks[common_t]:
                                             all_times[clock_line].append([split_t])
 
@@ -948,7 +925,6 @@ class Pseudoclock(Device):
                                         if clock_line in enabled_looping_clocks:
                                             all_times[clock_line].append(ticks)
 
-                                    #clock.append({'start': split_t, 'reps': 1, 'step': remainder/maxrate, 'enabled_clocks':enabled_looping_clocks})
                                     clock.append({'start': split_t, 'reps': 1, 'step': remainder, 'enabled_clocks':enabled_looping_clocks})
 
                                 split_clock_instructions[split_index] = 1
@@ -1078,7 +1054,6 @@ class Pseudoclock(Device):
                                 break
 
                         if not is_commontick: #alwas not a common tick??
-
                             if i+1 < len(all_change_times): #check if this is not the last instruction / stop()- instruction
                                 for clock_line in enabled_clocks:
                                     all_times[clock_line].append(time)
@@ -1096,7 +1071,6 @@ class Pseudoclock(Device):
                                     all_times[clock_line].append(time)
                                 clock.append({'start': time, 'reps': 1, 'step': 10.0/self.clock_limit, 'enabled_clocks':enabled_clocks})
                         else: #dead code??
-                            #print "ommit tick att "+str(time)
                             pass
 
 
@@ -1141,19 +1115,6 @@ class Pseudoclock(Device):
                         if add_tick:
                             clock.append({'start': time, 'reps': 1, 'step': 10.0/self.clock_limit, 'enabled_clocks':enabled_clocks})
 
-        # for i in clock:
-        #     b = i.copy()
-        #     clocks = []
-        #     clks = b['enabled_clocks']
-        #     for c in clks:
-        #         clocks.append(c.name)
-        #     b['enabled_clocks'] = clocks
-
-        #     print str(b)
-
-
-
-
         return all_times, clock
     
     def get_outputs_by_clockline(self):
@@ -1176,7 +1137,6 @@ class Pseudoclock(Device):
         all_change_times, change_times, split_ramp_at = self.collect_change_times(all_outputs, outputs_by_clockline)
         for clock_line_name in split_ramp_at:
             split_set = set(split_ramp_at[clock_line_name]) #get rid of duplicates
-            #split_ramp_at[clock_line_name].sort()
             split_ramp_at[clock_line_name] = list(split_set)
             split_ramp_at[clock_line_name].sort()
 
@@ -1191,10 +1151,6 @@ class Pseudoclock(Device):
             # and for each output on the clockline
             for output in outputs_by_clockline[clock_line]:
                 # call make_timeseries to expand the list of instructions for each change_time on this clock line
-                # if clock_line.name in split_ramp_at:
-                #     split = split_ramp_at[clock_line.name]
-                # else:
-                #     split = None
                 output.make_timeseries(clock_line_change_times)
 
         # now generate the clock meta data for the Pseudoclock
@@ -1694,7 +1650,6 @@ class Output(Device):
                 if len(self.timeseries) <= i-split_offset:
                     #no instructions are set for this
                     outarray = self.timeseries[-1]
-                    #print "No instruction for this device: "+str(self.name)+ "at t= "+str(time)
                 else:
 
                     if isinstance(self.timeseries[i-split_offset],dict):
